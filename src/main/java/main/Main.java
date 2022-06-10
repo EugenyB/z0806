@@ -1,25 +1,62 @@
 package main;
 
-import java.sql.*;
+import lombok.SneakyThrows;
+import main.dao.ArtistDAO;
+import main.db.DBManager;
+import main.db.tables.Artist;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.Scanner;
 
 public class Main {
+
+    private ArtistDAO artistDAO;
     public static void main(String[] args) {
         new Main().run();
     }
 
+    @SneakyThrows
     private void run() {
-        try (Connection connection = DriverManager.getConnection("jdbc:mariadb://localhost:3306/z0806", "student", "123")) {
-            Statement statement = connection.createStatement();
-            ResultSet resultSet = statement.executeQuery("select * from person left join department d on dept_id = d.id");
-            while (resultSet.next()) {
-                String name = resultSet.getString("name");
-                int age = resultSet.getInt("age");
-                String phone = resultSet.getString("phone");
-                String department = resultSet.getString("title");
-                System.out.println(name + " " + age + " " + phone + " " + department);
+        artistDAO = new ArtistDAO();
+        int m;
+        while ((m=menu())!=0) {
+            switch (m) {
+                case 1 -> showAll();
+                case 2 -> showById();
+                case 3 -> addArtist();
             }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+        }
+        DBManager.getInstance().getConnection().close();
+    }
+
+    private void addArtist() {
+        Scanner in = new Scanner(System.in);
+        String name = in.nextLine();
+        artistDAO.addArtist(new Artist(0, name));
+        System.out.println("Ok!");
+    }
+
+    private void showById() {
+        Scanner in = new Scanner(System.in);
+        int id = in.nextInt();
+        artistDAO.findById(id).ifPresent(System.out::println);
+    }
+
+    private int menu() {
+        System.out.println("""
+                1. Show all
+                2. Show by id
+                3. Add
+                0. Exit
+                """);
+        return new Scanner(System.in).nextInt();
+    }
+
+    private void showAll() {
+        List<Artist> artists = artistDAO.findAll();
+        for (Artist artist : artists) {
+            System.out.println(artist.getName());
         }
     }
 }
